@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Curve Fitting Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        #canvas {
+            border: 2px solid #333;
+            background-color: white;
+            margin: 20px;
+        }
+        .controls {
+            margin: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-width: 600px;
+        }
+        .function-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #equation {
+            font-family: monospace;
+            font-size: 16px;
+            margin: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            max-width: 600px;
+            word-wrap: break-word;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Curve Fitting Tool</h1>
+    <div class="controls">
+        <button onclick="clearCanvas()">Clear Canvas</button>
+        <button onclick="fitCurve()">Find Function</button>
+        <div class="function-group">
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="polynomial" checked> Polynomial (x^n)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="negativePolynomial"> Negative Powers (x^-n)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="trig"> Trigonometric
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="inverseTrig"> Inverse Trig
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="exponential"> Exponential
+                </label>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <div id="equation"></div>
+    <script src="tree.js"></script>
+</body>
+</html>
