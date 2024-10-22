@@ -98,8 +98,6 @@ const canvas = document.getElementById('canvas');
                 names.push("e^x");
                 functions.push(x => Math.exp(-x));
                 names.push("e^-x");
-                functions.push(x => Math.log(Math.abs(x) + 1));
-                names.push("ln(|x|+1)");
             }
 
             return { functions, names };
