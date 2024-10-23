@@ -8,7 +8,30 @@ const canvas = document.getElementById('canvas');
         const scaleY = 50;
         const originX = width / 2;
         const originY = height / 2;
+        const style = document.createElement('style');
+        style.textContent = `
+            #equation {
+                max-width: 100%;
+                overflow-x: auto;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+        `;
+        document.head.appendChild(style);
 
+        window.MathJax = {
+            tex: {
+                packages: ['base', 'ams'],
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
         // Draw coordinate system
         function drawGrid() {
             ctx.strokeStyle = '#ddd';
@@ -89,8 +112,6 @@ const canvas = document.getElementById('canvas');
             if (document.getElementById('inverseTrig').checked) {
                 functions.push(x => Math.atan(x));
                 names.push("arctan(x)");
-                functions.push(x => Math.asin(x/Math.sqrt(1 + x*x)));
-                names.push("arcsin(x/√(1+x²))");
             }
 
             if (document.getElementById('exponential').checked) {
@@ -99,7 +120,6 @@ const canvas = document.getElementById('canvas');
                 functions.push(x => Math.exp(-x));
                 names.push("e^-x");
             }
-
             return { functions, names };
         }
 
@@ -146,6 +166,20 @@ const canvas = document.getElementById('canvas');
             isDrawing = false;
         }
 
+        function termToLatex(term) {
+            return term
+                .replace(/\^(\d+)/g, '^{$1}')
+                .replace(/x\^-(\d+)/g, 'x^{-$1}')
+                .replace(/sin\(x\)/g, '\\sin(x)')
+                .replace(/cos\(x\)/g, '\\cos(x)')
+                .replace(/sin\(2x\)/g, '\\sin(2x)')
+                .replace(/cos\(2x\)/g, '\\cos(2x)')
+                .replace(/arctan\(x\)/g, '\\arctan(x)')
+                .replace(/e\^x/g, 'e^{x}')
+                .replace(/e\^-x/g, 'e^{-x}');
+        }
+        
+
         function fitCurve() {
             if (points.length < 2) return;
 
@@ -172,18 +206,47 @@ const canvas = document.getElementById('canvas');
             const Xty = numeric.dot(Xt, y);
             const coefficients = numeric.solve(XtX, Xty);
 
-            // Display the fitted function
-            let equation = "f(x) = ";
+            let terms = [];
+    
             coefficients.forEach((coef, i) => {
                 if (Math.abs(coef) < 0.0001) return;
+                
+                let term = '';
                 if (i === 0) {
-                    equation += coef.toFixed(3);
+                    term = coef.toFixed(3);
                 } else {
-                    equation += (coef >= 0 ? " + " : " - ") + 
-                               Math.abs(coef).toFixed(3) + "*" + names[i];
+                    const absCoef = Math.abs(coef).toFixed(3);
+                    // Only show coefficient if it's not 1
+                    const coefStr = absCoef === '1.000' ? '' : absCoef;
+                    term = coefStr + (coefStr ? '\\,' : '') + termToLatex(names[i]);
+                }
+                terms.push({ 
+                    value: term, 
+                    isPositive: coef >= 0 
+                });
+            });
+
+            // Construct the equation with proper signs
+            let equation = 'f(x) = ';
+            terms.forEach((term, i) => {
+                if (i === 0) {
+                    equation += term.value;
+                } else {
+                    equation += (term.isPositive ? ' + ' : ' - ') + term.value;
                 }
             });
-            document.getElementById('equation').textContent = equation;
+
+            // Wrap in LaTeX display math and add line breaking hints
+            const latexEquation = `\\begin{aligned} ${equation} \\end{aligned}`;
+            
+            // Update the display - assumes you're using MathJax or KaTeX
+            const equationElement = document.getElementById('equation');
+            equationElement.textContent = latexEquation;
+            
+            // If using MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise([equationElement]);
+            }
 
             // Draw the fitted curve
             ctx.clearRect(0, 0, width, height);

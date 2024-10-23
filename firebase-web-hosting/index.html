@@ -12,6 +12,17 @@
             background-color: #f0f0f0;
             padding: 20px;
         }
+        h1 {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         #canvas {
             border: 2px solid #333;
             background-color: white;
@@ -24,14 +35,17 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 5px;
             max-width: 600px;
+        }
+        .controls h2 {
+            margin: 0 0 10px 0;
         }
         .function-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 2px;
         }
         button {
             padding: 8px 16px;
@@ -57,43 +71,61 @@
         }
         .checkbox-group {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 5px;
         }
         .checkbox-label {
             display: flex;
             align-items: center;
             gap: 5px;
         }
+        label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 2px 0;
+        }
     </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <h1>Curve Fitting Tool</h1>
-    <div class="controls">
-        <button onclick="clearCanvas()">Clear Canvas</button>
-        <button onclick="fitCurve()">Find Function</button>
-        <div class="function-group">
-            <div class="checkbox-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="polynomial" checked> Polynomial (x^n)
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="negativePolynomial"> Negative Powers (x^-n)
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="trig"> Trigonometric
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="inverseTrig"> Inverse Trig
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="exponential"> Exponential
-                </label>
+    <h1>Draw Something:</h1>
+    <div class="container">
+        <div class="controls">
+            <h2>Pick function types for fitting:</h2>
+            <div class="function-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="polynomial">
+                        Polynomial (x^n)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="negativePolynomial">
+                        Negative Powers (x^-n)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="trig">
+                        Trigonometric
+                    </label>
+                    <label>
+                        <input type="checkbox" id="inverseTrig">
+                        Inverse Trig
+                    </label>
+                    <label>
+                        <input type="checkbox" id="exponential">
+                        Exponential
+                    </label>
+                </div>
             </div>
+            <button onclick="fitCurve()">Find Function</button>
+            <button onclick="clearCanvas()">Clear Canvas</button>
+            <div id="equation"></div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="canvas" width="800" height="600"></canvas>
         </div>
     </div>
-    <canvas id="canvas" width="600" height="600"></canvas>
-    <div id="equation"></div>
     <script src="tree.js"></script>
 </body>
 </html>
