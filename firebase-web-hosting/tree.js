@@ -44,7 +44,7 @@ document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', () => {
     const equationElement = document.getElementById('equation');
     if (equationElement) {
-        equationElement.textContent = '\\begin{gathered} f(x) = ? \\end{gathered}';
+        equationElement.textContent = '\\begin{gathered} f(x) = \? \\end{gathered}';
         if (window.MathJax) {
             MathJax.typesetPromise([equationElement]);
         }
