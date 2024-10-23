@@ -11,13 +11,41 @@ const canvas = document.getElementById('canvas');
         const style = document.createElement('style');
         style.textContent = `
             #equation {
-                max-width: 100%;
-                overflow-x: auto;
+                width: 100%;
+                min-height: 200px;  /* Adjust this value based on your needs */
+                margin: 1rem auto;
                 padding: 1rem;
-                margin: 1rem 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: white;  /* Or any color that matches your design */
+            }
+            
+            #equation > * {
+                width: 100%;
+            }
+            
+            .MathJax {
+                max-width: 100% !important;
+                margin: 0 auto !important;
+            }
+            
+            .MathJax_Display {
+                margin: 0 !important;
             }
         `;
         document.head.appendChild(style);
+
+        // Initialize the container with a placeholder equation
+        document.addEventListener('DOMContentLoaded', () => {
+            const equationElement = document.getElementById('equation');
+            if (equationElement) {
+                equationElement.textContent = '\\begin{multline*} f(x) = ? \\end{multline*}';
+                if (window.MathJax) {
+                    MathJax.typesetPromise([equationElement]);
+                }
+            }
+        });
 
         window.MathJax = {
             tex: {
