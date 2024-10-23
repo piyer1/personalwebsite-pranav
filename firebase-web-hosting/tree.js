@@ -9,44 +9,47 @@ const canvas = document.getElementById('canvas');
         const originX = width / 2;
         const originY = height / 2;
         const style = document.createElement('style');
-        style.textContent = `
-            #equation {
-                width: 100%;
-                min-height: 200px;  /* Adjust this value based on your needs */
-                margin: 1rem auto;
-                padding: 1rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background-color: white;  /* Or any color that matches your design */
-            }
-            
-            #equation > * {
-                width: 100%;
-            }
-            
-            .MathJax {
-                max-width: 100% !important;
-                margin: 0 auto !important;
-            }
-            
-            .MathJax_Display {
-                margin: 0 !important;
-            }
-        `;
-        document.head.appendChild(style);
+style.textContent = `
+    #equation {
+        width: 100%;
+        height: 200px;
+        margin: 1rem auto;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    #equation > * {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    
+    .MathJax {
+        display: block !important;
+        margin: 0 auto !important;
+    }
+    
+    .MathJax_Display {
+        margin: 0 !important;
+        max-width: 100%;
+    }
+`;
+document.head.appendChild(style);
 
-        // Initialize the container with a placeholder equation
-        document.addEventListener('DOMContentLoaded', () => {
-            const equationElement = document.getElementById('equation');
-            if (equationElement) {
-                equationElement.textContent = '\\begin{multline*} f(x) = ? \\end{multline*}';
-                if (window.MathJax) {
-                    MathJax.typesetPromise([equationElement]);
-                }
-            }
-        });
-
+// Initialize container with placeholder
+document.addEventListener('DOMContentLoaded', () => {
+    const equationElement = document.getElementById('equation');
+    if (equationElement) {
+        equationElement.textContent = '\\begin{gathered} f(x) = 0 \\end{gathered}';
+        if (window.MathJax) {
+            MathJax.typesetPromise([equationElement]);
+        }
+    }
+});
         window.MathJax = {
             tex: {
                 packages: ['base', 'ams'],
@@ -254,27 +257,63 @@ const canvas = document.getElementById('canvas');
                 });
             });
 
-            // Construct the equation with proper signs
-            let equation = 'f(x) = ';
-            terms.forEach((term, i) => {
-                if (i === 0) {
-                    equation += term.value;
-                } else {
-                    equation += (term.isPositive ? ' + ' : ' - ') + term.value;
-                }
-            });
+             // Determine optimal terms per line based on total terms
+    const totalTerms = terms.length;
+    let TERMS_PER_LINE = 3; // Default
+    if (totalTerms > 12) TERMS_PER_LINE = 4;
+    if (totalTerms > 16) TERMS_PER_LINE = 5;
 
-            // Wrap in LaTeX display math and add line breaking hints
-            const latexEquation = `\\begin{aligned} ${equation} \\end{aligned}`;
-            
-            // Update the display - assumes you're using MathJax or KaTeX
-            const equationElement = document.getElementById('equation');
-            equationElement.textContent = latexEquation;
-            
-            // If using MathJax
-            if (window.MathJax) {
-                MathJax.typesetPromise([equationElement]);
+    // Group terms into lines
+    let lines = [];
+    let currentLine = [];
+    
+    terms.forEach((term, i) => {
+        if (i === 0) {
+            // First line starts with f(x) =
+            currentLine.push(`f(x) = ${term.value}`);
+        } else if (currentLine.length === 0) {
+            // Start subsequent lines with proper alignment
+            currentLine.push(`\\quad ${term.isPositive ? '+' : '-'} ${term.value}`);
+        } else {
+            // Middle terms in a line
+            currentLine.push(`${term.isPositive ? '+' : '-'} ${term.value}`);
+        }
+        
+        if (currentLine.length === TERMS_PER_LINE && i < terms.length - 1) {
+            lines.push(currentLine.join(' '));
+            currentLine = [];
+        }
+    });
+    
+    if (currentLine.length > 0) {
+        lines.push(currentLine.join(' '));
+    }
+
+    // Construct the final LaTeX equation
+    const latexEquation = `\\begin{gathered}
+${lines.join(' \\\\\n')}
+\\end{gathered}`;
+    
+    // Update the display
+    const equationElement = document.getElementById('equation');
+    equationElement.textContent = latexEquation;
+    
+    if (window.MathJax) {
+        MathJax.typesetPromise([equationElement]).then(() => {
+            // After rendering, check if equation overflows and adjust if needed
+            const mathJaxOutput = equationElement.querySelector('.MathJax');
+            if (mathJaxOutput) {
+                const scale = Math.min(
+                    equationElement.offsetWidth / mathJaxOutput.offsetWidth,
+                    equationElement.offsetHeight / mathJaxOutput.offsetHeight
+                );
+                if (scale < 1) {
+                    mathJaxOutput.style.transform = `scale(${scale})`;
+                    mathJaxOutput.style.transformOrigin = 'center center';
+                }
             }
+        });
+    }
 
             // Draw the fitted curve
             ctx.clearRect(0, 0, width, height);
@@ -318,5 +357,4 @@ const canvas = document.getElementById('canvas');
             }
             ctx.stroke();
         }
-
         init();
