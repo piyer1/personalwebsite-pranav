@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Curve Fitting Tool</title>
+    <title>Function Drawing Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
     <style>
         body {
@@ -30,14 +30,14 @@
         }
         .controls {
             margin: 10px;
-            padding: 10px;
+            padding: 20px;
             background-color: white;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            max-width: 600px;
+            gap: 10px;
+            min-width: 300px;
         }
         .controls h2 {
             margin: 0 0 10px 0;
@@ -45,7 +45,7 @@
         .function-group {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 10px;
         }
         button {
             padding: 8px 16px;
@@ -55,77 +55,308 @@
             background-color: #4CAF50;
             color: white;
             cursor: pointer;
+            font-size: 16px;
         }
         button:hover {
             background-color: #45a049;
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         #equation {
             font-family: monospace;
-            font-size: 16px;
+            font-size: 18px;
+            min-height: 50px;
             margin: 10px;
-            padding: 10px;
-            background-color: #fff;
+            padding: 20px;
+            background-color: #f8f8f8;
             border-radius: 4px;
-            max-width: 600px;
-            word-wrap: break-word;
-        }
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .checkbox-label {
             display: flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            font-weight: bold;
+        }
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            color: #2196F3;
+        }
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         label {
             display: flex;
             align-items: center;
-            gap: 5px;
-            margin: 2px 0;
+            gap: 8px;
+            cursor: pointer;
         }
     </style>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <h1>Draw Something:</h1>
+    <h1>Function Drawing Game</h1>
     <div class="container">
         <div class="controls">
-            <h2>Pick function types for fitting:</h2>
+            <h2>Select function type:</h2>
             <div class="function-group">
-                <div class="checkbox-group">
+                <div class="radio-group">
                     <label>
-                        <input type="checkbox" id="polynomial">
-                        Polynomial (x^n)
+                        <input type="radio" name="functionType" value="polynomial" checked>
+                        Polynomial (ax² + b)
                     </label>
                     <label>
-                        <input type="checkbox" id="negativePolynomial">
-                        Inverse (x^-n)
+                        <input type="radio" name="functionType" value="reciprocal">
+                        Reciprocal (a/x + b)
                     </label>
                     <label>
-                        <input type="checkbox" id="trig">
-                        Trigonometric (sin(x), cos(x))
+                        <input type="radio" name="functionType" value="trig">
+                        Trigonometric (a·sin(x) + b)
                     </label>
                     <label>
-                        <input type="checkbox" id="inverseTrig">
-                        Inverse Trig (arctan(x))
+                        <input type="radio" name="functionType" value="inverseTrig">
+                        Inverse Trig (a·arctan(x) + b)
                     </label>
                     <label>
-                        <input type="checkbox" id="exponential">
-                        Exponential (e^x)
+                        <input type="radio" name="functionType" value="exponential">
+                        Exponential (a·e^x + b)
                     </label>
                 </div>
             </div>
-            <button onclick="fitCurve()">Find Function</button>
-            <button onclick="clearCanvas()">Clear Canvas</button>
+            <button id="generateBtn" onclick="generateFunction()">Generate Function</button>
+            <button id="submitBtn" onclick="submitDrawing()" disabled>Submit Drawing</button>
+            <button id="clearBtn" onclick="clearCanvas()">Clear Canvas</button>
             <div id="equation"></div>
+            <div id="score"></div>
         </div>
-        <div class="canvas-container">
-            <canvas id="canvas" width="800" height="600"></canvas>
-        </div>
+        <canvas id="canvas" width="800" height="600"></canvas>
     </div>
-    <script src="tree.js"></script>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const width = canvas.width;
+const height = canvas.height;
+const scaleX = 50; // pixels per unit
+const scaleY = 50;
+const originX = width / 2;
+const originY = height / 2;
+
+let points = [];
+let isDrawing = false;
+let currentFunction = null;
+let currentCoefficients = null;
+
+function drawGrid() {
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+
+    // Draw grid lines
+    for (let x = 0; x <= width; x += scaleX) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= height; y += scaleY) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    // Draw axes
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, height/2);
+    ctx.lineTo(width, height/2);
+    ctx.moveTo(width/2, 0);
+    ctx.lineTo(width/2, height);
+    ctx.stroke();
+}
+
+function toMathCoords(x, y) {
+    return {
+        x: (x - originX) / scaleX,
+        y: -(y - originY) / scaleY
+    };
+}
+
+function toCanvasCoords(x, y) {
+    return {
+        x: x * scaleX + originX,
+        y: -y * scaleY + originY
+    };
+}
+
+function getRandomNumber(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function generateFunction() {
+    const functionType = document.querySelector('input[name="functionType"]:checked').value;
+    const a = getRandomNumber(-2, 2);
+    const b = getRandomNumber(-3, 3);
+    currentCoefficients = { a, b };
+
+    switch(functionType) {
+        case 'polynomial':
+            currentFunction = x => a * x * x + b;
+            displayEquation(`f(x) = ${a.toFixed(2)}x² + ${b.toFixed(2)}`);
+            break;
+        case 'reciprocal':
+            currentFunction = x => (x !== 0 ? a/x + b : undefined);
+            displayEquation(`f(x) = ${a.toFixed(2)}/x + ${b.toFixed(2)}`);
+            break;
+        case 'trig':
+            currentFunction = x => a * Math.sin(x) + b;
+            displayEquation(`f(x) = ${a.toFixed(2)}·sin(x) + ${b.toFixed(2)}`);
+            break;
+        case 'inverseTrig':
+            currentFunction = x => a * Math.atan(x) + b;
+            displayEquation(`f(x) = ${a.toFixed(2)}·arctan(x) + ${b.toFixed(2)}`);
+            break;
+        case 'exponential':
+            currentFunction = x => a * Math.exp(x) + b;
+            displayEquation(`f(x) = ${a.toFixed(2)}·e^x + ${b.toFixed(2)}`);
+            break;
+    }
+    
+    // Clear canvas and enable submit button
+    clearCanvas();
+    document.getElementById('submitBtn').disabled = false;
+    points = [];
+    document.getElementById('score').textContent = '';
+}
+
+function displayEquation(equation) {
+    document.getElementById('equation').textContent = equation;
+}
+
+function drawFunction(func, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    let firstPoint = true;
+    for (let px = 0; px < width; px++) {
+        const x = (px - originX) / scaleX;
+        const y = func(x);
+        
+        if (y !== undefined && !isNaN(y) && Math.abs(y) < height/(2*scaleY)) {
+            const canvasCoords = toCanvasCoords(x, y);
+            if (firstPoint) {
+                ctx.moveTo(canvasCoords.x, canvasCoords.y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(canvasCoords.x, canvasCoords.y);
+            }
+        } else {
+            firstPoint = true;
+        }
+    }
+    ctx.stroke();
+}
+
+function calculateScore() {
+    if (!currentFunction || points.length < 2) return 0;
+    
+    let totalError = 0;
+    let totalPoints = 0;
+    
+    points.forEach(point => {
+        const actualY = currentFunction(point.x);
+        if (actualY !== undefined && !isNaN(actualY)) {
+            const error = Math.abs(point.y - actualY);
+            totalError += error;
+            totalPoints++;
+        }
+    });
+    
+    if (totalPoints === 0) return 0;
+    
+    const averageError = totalError / totalPoints;
+    const score = Math.max(0, Math.min(100, 100 * Math.exp(-averageError)));
+    return Math.round(score);
+}
+
+function submitDrawing() {
+    if (!currentFunction) return;
+    
+    // Clear canvas and redraw grid
+    ctx.clearRect(0, 0, width, height);
+    drawGrid();
+    
+    // Draw actual function first (in red)
+    drawFunction(currentFunction, '#ff0000');
+    
+    // Draw user's curve on top (in blue)
+    ctx.strokeStyle = '#2196F3';
+    ctx.beginPath();
+    points.forEach((point, i) => {
+        const canvasCoords = toCanvasCoords(point.x, point.y);
+        if (i === 0) {
+            ctx.moveTo(canvasCoords.x, canvasCoords.y);
+        } else {
+            ctx.lineTo(canvasCoords.x, canvasCoords.y);
+        }
+    });
+    ctx.stroke();
+    
+    // Calculate and display score
+    const score = calculateScore();
+    document.getElementById('score').textContent = `Score: ${score}`;
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const mathCoords = toMathCoords(x, y);
+    points.push(mathCoords);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.strokeStyle = '#2196F3';
+    ctx.lineWidth = 2;
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const mathCoords = toMathCoords(x, y);
+    points.push(mathCoords);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, width, height);
+    drawGrid();
+    points = [];
+    document.getElementById('score').textContent = '';
+}
+
+// Initialize
+function init() {
+    clearCanvas();
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+}
+
+init();
+</script>
 </body>
 </html>
