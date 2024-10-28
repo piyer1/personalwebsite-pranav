@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
+<!-- Previous head section remains exactly the same -->
 <head>
     <title>Function Drawing Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
     <style>
+        /* All previous styles remain exactly the same */
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -98,6 +100,7 @@
     </style>
 </head>
 <body>
+    <!-- Previous HTML structure remains exactly the same -->
     <h1>Function Drawing Game</h1>
     <div class="container">
         <div class="controls">
@@ -105,8 +108,16 @@
             <div class="function-group">
                 <div class="radio-group">
                     <label>
-                        <input type="radio" name="functionType" value="polynomial" checked>
-                        Polynomial (ax² + b)
+                        <input type="radio" name="functionType" value="linear" checked>
+                        Linear (ax + b)
+                    </label>
+                    <label>
+                        <input type="radio" name="functionType" value="quadratic">
+                        Quadratic (ax² + bx + c)
+                    </label>
+                    <label>
+                        <input type="radio" name="functionType" value="cubic">
+                        Cubic (ax³ + bx² + cx + d)
                     </label>
                     <label>
                         <input type="radio" name="functionType" value="reciprocal">
@@ -114,11 +125,7 @@
                     </label>
                     <label>
                         <input type="radio" name="functionType" value="trig">
-                        Trigonometric (a·sin(x) + b)
-                    </label>
-                    <label>
-                        <input type="radio" name="functionType" value="inverseTrig">
-                        Inverse Trig (a·arctan(x) + b)
+                        Trigonometric (Choose randomly between sin, cos, tan)
                     </label>
                     <label>
                         <input type="radio" name="functionType" value="exponential">
@@ -135,228 +142,6 @@
         <canvas id="canvas" width="800" height="600"></canvas>
     </div>
 
-<script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const width = canvas.width;
-const height = canvas.height;
-const scaleX = 50; // pixels per unit
-const scaleY = 50;
-const originX = width / 2;
-const originY = height / 2;
-
-let points = [];
-let isDrawing = false;
-let currentFunction = null;
-let currentCoefficients = null;
-
-function drawGrid() {
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth = 1;
-
-    // Draw grid lines
-    for (let x = 0; x <= width; x += scaleX) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-    }
-    for (let y = 0; y <= height; y += scaleY) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-
-    // Draw axes
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, height/2);
-    ctx.lineTo(width, height/2);
-    ctx.moveTo(width/2, 0);
-    ctx.lineTo(width/2, height);
-    ctx.stroke();
-}
-
-function toMathCoords(x, y) {
-    return {
-        x: (x - originX) / scaleX,
-        y: -(y - originY) / scaleY
-    };
-}
-
-function toCanvasCoords(x, y) {
-    return {
-        x: x * scaleX + originX,
-        y: -y * scaleY + originY
-    };
-}
-
-function getRandomNumber(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-function generateFunction() {
-    const functionType = document.querySelector('input[name="functionType"]:checked').value;
-    const a = getRandomNumber(-2, 2);
-    const b = getRandomNumber(-3, 3);
-    currentCoefficients = { a, b };
-
-    switch(functionType) {
-        case 'polynomial':
-            currentFunction = x => a * x * x + b;
-            displayEquation(`f(x) = ${a.toFixed(2)}x² + ${b.toFixed(2)}`);
-            break;
-        case 'reciprocal':
-            currentFunction = x => (x !== 0 ? a/x + b : undefined);
-            displayEquation(`f(x) = ${a.toFixed(2)}/x + ${b.toFixed(2)}`);
-            break;
-        case 'trig':
-            currentFunction = x => a * Math.sin(x) + b;
-            displayEquation(`f(x) = ${a.toFixed(2)}·sin(x) + ${b.toFixed(2)}`);
-            break;
-        case 'inverseTrig':
-            currentFunction = x => a * Math.atan(x) + b;
-            displayEquation(`f(x) = ${a.toFixed(2)}·arctan(x) + ${b.toFixed(2)}`);
-            break;
-        case 'exponential':
-            currentFunction = x => a * Math.exp(x) + b;
-            displayEquation(`f(x) = ${a.toFixed(2)}·e^x + ${b.toFixed(2)}`);
-            break;
-    }
-    
-    // Clear canvas and enable submit button
-    clearCanvas();
-    document.getElementById('submitBtn').disabled = false;
-    points = [];
-    document.getElementById('score').textContent = '';
-}
-
-function displayEquation(equation) {
-    document.getElementById('equation').textContent = equation;
-}
-
-function drawFunction(func, color) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    
-    let firstPoint = true;
-    for (let px = 0; px < width; px++) {
-        const x = (px - originX) / scaleX;
-        const y = func(x);
-        
-        if (y !== undefined && !isNaN(y) && Math.abs(y) < height/(2*scaleY)) {
-            const canvasCoords = toCanvasCoords(x, y);
-            if (firstPoint) {
-                ctx.moveTo(canvasCoords.x, canvasCoords.y);
-                firstPoint = false;
-            } else {
-                ctx.lineTo(canvasCoords.x, canvasCoords.y);
-            }
-        } else {
-            firstPoint = true;
-        }
-    }
-    ctx.stroke();
-}
-
-function calculateScore() {
-    if (!currentFunction || points.length < 2) return 0;
-    
-    let totalError = 0;
-    let totalPoints = 0;
-    
-    points.forEach(point => {
-        const actualY = currentFunction(point.x);
-        if (actualY !== undefined && !isNaN(actualY)) {
-            const error = Math.abs(point.y - actualY);
-            totalError += error;
-            totalPoints++;
-        }
-    });
-    
-    if (totalPoints === 0) return 0;
-    
-    const averageError = totalError / totalPoints;
-    const score = Math.max(0, Math.min(100, 100 * Math.exp(-averageError)));
-    return Math.round(score);
-}
-
-function submitDrawing() {
-    if (!currentFunction) return;
-    
-    // Clear canvas and redraw grid
-    ctx.clearRect(0, 0, width, height);
-    drawGrid();
-    
-    // Draw actual function first (in red)
-    drawFunction(currentFunction, '#ff0000');
-    
-    // Draw user's curve on top (in blue)
-    ctx.strokeStyle = '#2196F3';
-    ctx.beginPath();
-    points.forEach((point, i) => {
-        const canvasCoords = toCanvasCoords(point.x, point.y);
-        if (i === 0) {
-            ctx.moveTo(canvasCoords.x, canvasCoords.y);
-        } else {
-            ctx.lineTo(canvasCoords.x, canvasCoords.y);
-        }
-    });
-    ctx.stroke();
-    
-    // Calculate and display score
-    const score = calculateScore();
-    document.getElementById('score').textContent = `Score: ${score}`;
-}
-
-function startDrawing(e) {
-    isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const mathCoords = toMathCoords(x, y);
-    points.push(mathCoords);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.strokeStyle = '#2196F3';
-    ctx.lineWidth = 2;
-}
-
-function draw(e) {
-    if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const mathCoords = toMathCoords(x, y);
-    points.push(mathCoords);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-}
-
-function stopDrawing() {
-    isDrawing = false;
-}
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, width, height);
-    drawGrid();
-    points = [];
-    document.getElementById('score').textContent = '';
-}
-
-// Initialize
-function init() {
-    clearCanvas();
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-}
-
-init();
-</script>
+<script src="script.js"></script>
 </body>
 </html>
